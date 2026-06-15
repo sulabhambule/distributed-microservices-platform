@@ -22,3 +22,4 @@ spring:
             - Path=/api/patients/**
           filters:
             - JwtValidation
+  
