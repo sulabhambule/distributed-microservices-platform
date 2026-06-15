@@ -14,7 +14,7 @@ import java.util.List;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/patients")
+@RequestMapping("/api")
 public class PatientController {
 
     private final PatientService patientService;
@@ -23,14 +23,14 @@ public class PatientController {
         this.patientService = patientService;
     }
 
-    @GetMapping
+    @GetMapping("/patients")
     public ResponseEntity<List<PatientResponseDTO>> getPatients() {
         // get all the patients
         List<PatientResponseDTO> patients = patientService.getPatients();
         return ResponseEntity.ok().body(patients);
     }
 
-    @PostMapping("/create")
+    @PostMapping("/patients")
     public ResponseEntity<PatientResponseDTO> createPatient(
             @Validated({Default.class, CreatePatientValidationGroup.class}) @RequestBody PatientRequestDTO patientRequestDTO
     ) {
@@ -38,7 +38,7 @@ public class PatientController {
         return ResponseEntity.status(HttpStatus.CREATED).body(patientResponseDTO);
     }
 
-    @PutMapping("/{id}")
+    @PutMapping("/patients/{id}")
     public ResponseEntity<PatientResponseDTO> updatePatient(
             @PathVariable UUID id, @Validated({Default.class}) @RequestBody PatientRequestDTO patientRequestDTO
     ) {
@@ -46,7 +46,7 @@ public class PatientController {
         return ResponseEntity.ok().body(patientResponseDTO);
     }
 
-    @DeleteMapping("/{id}")
+    @DeleteMapping("/patients/{id}")
     public ResponseEntity<Void> deletePatient(@PathVariable UUID id) {
         patientService. deletePatient(id);
         return ResponseEntity.noContent().build();
