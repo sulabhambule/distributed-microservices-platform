@@ -5,6 +5,7 @@ import com.sulabh.patient_service.dto.PatientResponseDTO;
 import com.sulabh.patient_service.exception.EmailAlreadyExistsException;
 import com.sulabh.patient_service.exception.PatientNotFoundException;
 import com.sulabh.patient_service.grpc.BillingServiceGrpcClient;
+import com.sulabh.patient_service.kafka.KafkaProducer;
 import com.sulabh.patient_service.mapper.PatientMapper;
 import com.sulabh.patient_service.model.Patient;
 import com.sulabh.patient_service.repo.PatientRepository;
@@ -19,10 +20,12 @@ public class PatientService {
 
     private final BillingServiceGrpcClient billingServiceGrpcClient;
     private final PatientRepository repo;
+    private final KafkaProducer kafkaProducer;
 
-    public PatientService(BillingServiceGrpcClient billingServiceGrpcClient, PatientRepository repo) {
+    public PatientService(BillingServiceGrpcClient billingServiceGrpcClient, PatientRepository repo, KafkaProducer kafkaProducer) {
         this.billingServiceGrpcClient = billingServiceGrpcClient;
         this.repo = repo;
+        this.kafkaProducer = kafkaProducer;
     }
 
     public List<PatientResponseDTO> getPatients() {
@@ -44,7 +47,9 @@ public class PatientService {
         Patient newPatient = repo.save(PatientMapper.toModel(patientRequestDTO));
         // this is a synchronous call to the billing service via grpc metthod.
         billingServiceGrpcClient.createBillingAccount(newPatient.getId().toString(), newPatient.getName(), newPatient.getEmail());
+
         // now we publish event in Kafka
+        kafkaProducer.sendEvent(newPatient);
         return PatientMapper.toDTO(newPatient);
     }
 
