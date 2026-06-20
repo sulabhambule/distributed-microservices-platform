@@ -13,7 +13,7 @@ public class AuthService {
 
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
-    private UserService userService;
+    private final UserService userService;
 
     public AuthService(PasswordEncoder passwordEncoder, UserService userService, JwtUtil jwtUtil) {
         this.passwordEncoder = passwordEncoder;

@@ -15,9 +15,8 @@ import java.util.Date;
 @Component
 public class JwtUtil {
     private final SecretKey secretKey;
-
+    //inject secretKey using env variables for security
     public JwtUtil(@Value("${jwt.secret}") String secret) {
-
         this.secretKey = Keys.hmacShaKeyFor(
                 secret.getBytes(StandardCharsets.UTF_8)
         );

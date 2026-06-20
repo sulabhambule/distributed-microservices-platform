@@ -2,10 +2,7 @@ package com.sulabh.auth_service.service;
 
 import com.sulabh.auth_service.model.User;
 import com.sulabh.auth_service.repository.UserRepository;
-import jakarta.validation.constraints.Email;
-import jakarta.validation.constraints.NotBlank;
 import org.springframework.stereotype.Service;
-
 import java.util.Optional;
 
 @Service

@@ -45,7 +45,7 @@ public class PatientService {
             throw new EmailAlreadyExistsException("A person with this email is already exists: " + patientRequestDTO.getEmail());
         }
         Patient newPatient = repo.save(PatientMapper.toModel(patientRequestDTO));
-        // this is a synchronous call to the billing service via grpc metthod.
+        // this is a synchronous call to the billing service via grpc method.
         billingServiceGrpcClient.createBillingAccount(newPatient.getId().toString(), newPatient.getName(), newPatient.getEmail());
 
         // now we publish event in Kafka

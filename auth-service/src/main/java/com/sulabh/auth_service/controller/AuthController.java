@@ -3,6 +3,7 @@ package com.sulabh.auth_service.controller;
 import com.sulabh.auth_service.dto.LoginRequestDTO;
 import com.sulabh.auth_service.dto.LoginResponseDTO;
 import com.sulabh.auth_service.service.AuthService;
+import io.swagger.v3.oas.annotations.Operation;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -20,7 +21,7 @@ public class AuthController {
     }
 
     // login
-
+    @Operation(summary = "Generate token on user login.")
     @PostMapping("/login")
     public ResponseEntity<LoginResponseDTO> login(
            @Valid @RequestBody LoginRequestDTO loginRequestDTO) {
@@ -36,9 +37,11 @@ public class AuthController {
     }
 
 
+    @Operation(summary = "Validate Token")
     @GetMapping("/validate")
     public ResponseEntity<Void> validateToken(@RequestHeader("Authorization") String authHeader) {
-        if(authHeader == null || !authHeader.startsWith("Bearer ")) {
+        // Authorization: Bearer <token>
+        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
         return authService.validateToken(authHeader.substring(7))
