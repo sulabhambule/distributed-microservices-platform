@@ -213,3 +213,233 @@ docker run -d \
   -e AUTH_SERVICE_URL=http://auth-service:4005 \
   api-gateway:latest
 ```
+
+
+
+
+
+## Key Dependencies
+
+### API Gateway Dependencies
+```xml
+<dependency>
+    <groupId>org.springframework.cloud</groupId>
+    <artifactId>spring-cloud-starter-gateway</artifactId>
+</dependency>
+```
+
+### Authentication Dependencies
+```xml
+<dependency>
+    <groupId>io.jsonwebtoken</groupId>
+    <artifactId>jjwt-api</artifactId>
+    <version>0.12.6</version>
+</dependency>
+<dependency>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-security</artifactId>
+</dependency>
+```
+
+### gRPC Dependencies
+```xml
+<dependency>
+    <groupId>io.grpc</groupId>
+    <artifactId>grpc-netty-shaded</artifactId>
+    <version>1.69.0</version>
+</dependency>
+<dependency>
+    <groupId>net.devh</groupId>
+    <artifactId>grpc-spring-boot-starter</artifactId>
+    <version>3.1.0.RELEASE</version>
+</dependency>
+```
+
+### Kafka Dependencies
+```xml
+<dependency>
+    <groupId>org.springframework.kafka</groupId>
+    <artifactId>spring-kafka</artifactId>
+    <version>3.3.0</version>
+</dependency>
+```
+
+### Protocol Buffers
+```xml
+<dependency>
+    <groupId>com.google.protobuf</groupId>
+    <artifactId>protobuf-java</artifactId>
+    <version>4.29.1</version>
+</dependency>
+```
+
+## Security Features
+
+### JWT Token Structure
+- **Algorithm:** HS256 (HMAC with SHA-256)
+- **Secret Key:** Base64-encoded 256-bit key
+- **Expiration:** 10 hours from issuance
+- **Claims:** Subject (email), Role, Issued At, Expiration
+
+### API Gateway Security
+- Custom JWT validation filter for protected routes
+- WebClient-based token validation against Auth Service
+- Automatic 401 Unauthorized response for invalid tokens
+- Path-based security (auth endpoints are public, patient endpoints are protected)
+
+### Password Security
+- BCrypt hashing with random salt
+- Minimum 8 character password requirement
+- Secure password comparison
+
+## Design Patterns & Best Practices
+
+- **API Gateway Pattern** - Single entry point for all client requests
+- **Authentication/Authorization** - Centralized JWT-based security
+- **Repository Pattern** - Data access abstraction via Spring Data JPA
+- **DTO Pattern** - Separation of internal models from API contracts
+- **Mapper Pattern** - Manual DTO-Entity conversion
+- **Service Layer** - Business logic encapsulation
+- **Global Exception Handling** - Centralized error handling with `@ControllerAdvice`
+- **Validation Groups** - Context-specific validation rules
+- **Synchronous RPC** - gRPC for inter-service communication
+- **Event-Driven Architecture** - Kafka for asynchronous messaging
+- **Multi-Stage Docker Builds** - Optimized container images
+- **Reactive Programming** - Spring WebFlux in API Gateway
+
+## Request Flow Example
+
+### Creating a Patient with Full Flow
+
+1. **Client authenticates:**
+   ```
+   POST /auth/login → Auth Service
+   Returns: JWT Token
+   ```
+
+2. **Client creates patient:**
+   ```
+   POST /api/patients (with JWT) → API Gateway
+   → Validates JWT with Auth Service
+   → Routes to Patient Service
+   ```
+
+3. **Patient Service processes:**
+   ```
+   - Validates request data
+   - Checks email uniqueness
+   - Saves patient to PostgreSQL
+   - Calls Billing Service via gRPC
+   - Publishes event to Kafka
+   - Returns patient data
+   ```
+
+4. **Billing Service:**
+   ```
+   - Receives gRPC call
+   - Creates billing account
+   - Returns account details
+   ```
+
+5. **Analytics Service:**
+   ```
+   - Consumes Kafka event
+   - Logs patient creation
+   - Performs analytics processing
+   ```
+
+## Service Ports Summary
+
+| Service | HTTP Port | Additional Ports | Purpose |
+|---------|-----------|------------------|---------|
+| API Gateway | 4004 | - | Entry point for all client requests |
+| Auth Service | 4005 | - | JWT authentication and validation |
+| Patient Service | 4000 | - | Patient CRUD operations |
+| Billing Service | 4001 | 9001 (gRPC) | Billing account management |
+| Analytics Service | 4002 | - | Event processing and analytics |
+| PostgreSQL (Patient) | 5000 | - | Patient service database |
+| PostgreSQL (Auth) | 5001 | - | Auth service database |
+| Kafka | 9094 | 9092 (internal) | Event streaming |
+
+## Monitoring & Logging
+
+All services use SLF4J with Logback for logging:
+- **Patient Service:** Logs REST requests, gRPC calls, and Kafka events
+- **Billing Service:** Logs incoming gRPC requests
+- **Analytics Service:** Logs consumed Kafka events
+- **Auth Service:** Logs authentication attempts and token validation
+- **API Gateway:** Logs routing decisions and validation failures
+
+## Troubleshooting
+
+### Common Issues
+
+**API Gateway 401 Unauthorized:**
+- Ensure JWT token is valid and not expired
+- Check Authorization header format: `Bearer <token>`
+- Verify Auth Service is running and accessible
+- Check JWT_SECRET environment variable matches across services
+
+**Kafka Connection Refused:**
+- Ensure Kafka is running and accessible
+- Check `SPRING_KAFKA_BOOTSTRAP_SERVERS` environment variable
+- Verify network connectivity between services
+- Wait for Kafka to fully start (can take 30-60 seconds)
+
+**gRPC Connection Failed:**
+- Ensure billing-service is running on port 9001
+- Check `BILLING_SERVICE_ADDRESS` and `BILLING_SERVICE_GRPC_PORT` configuration
+- Verify network connectivity between services
+
+**Database Connection Failed:**
+- Ensure PostgreSQL is running
+- Verify database credentials
+- Check database URL configuration
+- Wait for PostgreSQL to fully start
+
+**Proto Compilation Errors:**
+- Run `mvn clean compile` to regenerate proto classes
+- Ensure protobuf-maven-plugin is properly configured
+- Check that proto files are in `src/main/proto/` directory
+
+**Auth Service JWT Errors:**
+- Verify JWT_SECRET is properly base64-encoded
+- Ensure secret is at least 256 bits (32 characters when decoded)
+- Check that the same secret is used across all services
+
+## Environment Variables Reference
+
+### API Gateway
+- `AUTH_SERVICE_URL` - URL of the authentication service (default: http://localhost:4005)
+
+### Auth Service
+- `JWT_SECRET` - Base64-encoded secret key for JWT signing (required)
+- `SPRING_DATASOURCE_URL` - PostgreSQL connection URL
+- `SPRING_DATASOURCE_USERNAME` - Database username
+- `SPRING_DATASOURCE_PASSWORD` - Database password
+
+### Patient Service
+- `BILLING_SERVICE_ADDRESS` - Billing service hostname (default: localhost)
+- `BILLING_SERVICE_GRPC_PORT` - Billing service gRPC port (default: 9001)
+- `SPRING_KAFKA_BOOTSTRAP_SERVERS` - Kafka broker address (default: localhost:9092)
+- `SPRING_DATASOURCE_URL` - PostgreSQL connection URL
+- `SPRING_DATASOURCE_USERNAME` - Database username
+- `SPRING_DATASOURCE_PASSWORD` - Database password
+
+### Analytics Service
+- `SPRING_KAFKA_BOOTSTRAP_SERVERS` - Kafka broker address (default: localhost:9092)
+
+## Sample Data
+
+### Pre-loaded Users (Auth Service)
+- **Email:** testuser@test.com
+- **Password:** password123
+- **Role:** ADMIN
+
+### Pre-loaded Patients (Patient Service)
+15 sample patients with UUIDs ranging from `123e4567-e89b-12d3-a456-426614174000` to `223e4567-e89b-12d3-a456-426614174014`
+
+
+## License
+
+This is a demonstration project showcasing microservices architecture patterns with Spring Boot, Spring Cloud Gateway, gRPC, Apache Kafka, and JWT authentication.
