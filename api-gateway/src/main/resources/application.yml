@@ -1,25 +1,49 @@
+#server:
+#  port: 4004
+#
+#auth-service:
+#  url: http://localhost:4005
+#
+#spring:
+#  cloud:
+#    gateway:
+#      routes:
+#
+#        # Route for /api/auth/** to auth-service
+#        - id: auth-service
+#          uri: http://localhost:4005
+#          predicates:
+#            - Path=/auth/**
+#
+#        # Route for /api/patient/** to patient-service
+#        - id: patient-service
+#          uri: http://localhost:4000
+#          predicates:
+#            - Path=/api/patients/**
+#          filters:
+#            - JwtValidation
+#
+
+
 server:
   port: 4004
 
 auth-service:
-  url: http://localhost:4005
+  url: http://auth-service:4005
 
 spring:
   cloud:
     gateway:
       routes:
 
-        # Route for /api/auth/** to auth-service
         - id: auth-service
-          uri: http://localhost:4005
+          uri: http://auth-service:4005
           predicates:
             - Path=/auth/**
 
-        # Route for /api/patient/** to patient-service
         - id: patient-service
-          uri: http://localhost:4000
+          uri: http://patient-service:4000
           predicates:
             - Path=/api/patients/**
           filters:
             - JwtValidation
-  
