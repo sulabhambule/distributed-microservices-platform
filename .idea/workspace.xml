@@ -1,7 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ChangeListManager">
-    <list default="true" id="b170f746-339b-4dfd-9653-a600a5b38195" name="Changes" comment="" />
+    <list default="true" id="b170f746-339b-4dfd-9653-a600a5b38195" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/compose.yaml" beforeDir="false" afterPath="$PROJECT_DIR$/compose.yaml" afterDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -64,7 +66,7 @@
       <workItem from="1782466413216" duration="1111000" />
       <workItem from="1782550046742" duration="5713000" />
       <workItem from="1782575071779" duration="3382000" />
-      <workItem from="1782624129722" duration="6872000" />
+      <workItem from="1782624129722" duration="7011000" />
     </task>
     <servers />
   </component>
