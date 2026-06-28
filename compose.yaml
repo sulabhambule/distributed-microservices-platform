@@ -1,51 +1,7 @@
 
 services:
-  # patient service db
-
-  patient-service-db:
-    image: postgres:17
-    container_name: patient-service-db
-
-    networks:
-      - internal
-
-    environment:
-      POSTGRES_USER: user
-      POSTGRES_PASSWORD: password
-      POSTGRES_DB: patientdb
-
-    ports:
-      - "5000:5432"
-
-    volumes:
-      - patient-db-data:/var/lib/postgresql/data
-
-    restart: unless-stopped
-
-  # Auth PostgreSQL
-
-  auth-service-db:
-    image: postgres:17
-    container_name: auth-service-db
-
-    networks:
-      - internal
-
-    environment:
-      POSTGRES_USER: user
-      POSTGRES_PASSWORD: password
-      POSTGRES_DB: authdb
-
-    ports:
-      - "5001:5432"
-
-    volumes:
-      - auth-db-data:/var/lib/postgresql/data
-
-    restart: unless-stopped
 
   # Kafka
-
   kafka:
     image: bitnamilegacy/kafka:latest
     container_name: kafka
@@ -69,7 +25,6 @@ services:
 
 
   # Billing service
-
   billing-service:
     image: billing-service:latest
     build: ./billing-service
@@ -84,7 +39,6 @@ services:
     restart: unless-stopped
 
   # Analytics service
-
   analytics-service:
     image: analytics-service:latest
     build: ./analytics-service
@@ -117,8 +71,8 @@ services:
       - "4000:4000"
 
     environment:
-      SPRING_DATASOURCE_URL: jdbc:postgresql://patient-service-db:5432/patientdb
-      SPRING_DATASOURCE_USERNAME: user
+      SPRING_DATASOURCE_URL: postgresql://patient-db.c41uusgs8d4c.us-east-1.rds.amazonaws.com
+      SPRING_DATASOURCE_USERNAME: postgres
       SPRING_DATASOURCE_PASSWORD: password
       SPRING_JPA_HIBERNATE_DDL_AUTO: update
       SPRING_SQL_INIT_MODE: always
@@ -127,7 +81,6 @@ services:
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
 
     depends_on:
-      - patient-service-db
       - billing-service
       - kafka
 
@@ -147,14 +100,12 @@ services:
       - "4005:4005"
     environment:
       JWT_SECRET: 5ZveJML9b0iaZQ2NT/sDUdUCcWaRhZ74ck1Rc6kHLh4=
-      SPRING_DATASOURCE_URL: jdbc:postgresql://auth-service-db:5432/authdb
-      SPRING_DATASOURCE_USERNAME: user
+      SPRING_DATASOURCE_URL: jdbc:postgresql://auth-db.c41uusgs8d4c.us-east-1.rds.amazonaws.com:5432/authdb
+      SPRING_DATASOURCE_USERNAME: postgres
       SPRING_DATASOURCE_PASSWORD: password
       SPRING_JPA_HIBERNATE_DDL_AUTO: update
       SPRING_SQL_INIT_MODE: always
 
-    depends_on:
-      - auth-service-db
     restart: unless-stopped
 
 
