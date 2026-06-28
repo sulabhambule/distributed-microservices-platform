@@ -132,10 +132,6 @@ services:
 
     restart: unless-stopped
 
-volumes:
-  patient-db-data:
-  auth-db-data:
-
 networks:
   internal:
     driver: bridge
