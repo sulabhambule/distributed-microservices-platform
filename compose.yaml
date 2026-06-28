@@ -1,0 +1,218 @@
+
+services:
+  # patient service db
+
+  patient-service-db:
+    image: postgres:17
+    container_name: patient-service-db
+
+    networks:
+      - internal
+
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: patientdb
+
+    ports:
+      - "5000:5432"
+
+    volumes:
+      - patient-db-data:/var/lib/postgresql/data
+
+    restart: unless-stopped
+
+  # Auth PostgreSQL
+
+  auth-service-db:
+    image: postgres:17
+    container_name: auth-service-db
+
+    networks:
+      - internal
+
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: authdb
+
+    ports:
+      - "5001:5432"
+
+    volumes:
+      - auth-db-data:/var/lib/postgresql/data
+
+    restart: unless-stopped
+
+  # Kafka
+
+  kafka:
+    image: bitnamilegacy/kafka:latest
+    container_name: kafka
+    networks:
+      - internal
+
+    ports:
+      - "9092:9092"
+      - "9094:9094"
+
+    environment:
+      KAFKA_CFG_NODE_ID: 0
+      KAFKA_CFG_PROCESS_ROLES: controller,broker
+      KAFKA_CFG_CONTROLLER_QUORUM_VOTERS: 0@kafka:9093
+      KAFKA_CFG_LISTENERS: PLAINTEXT://:9092,CONTROLLER://:9093,EXTERNAL://:9094
+      KAFKA_CFG_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,EXTERNAL://localhost:9094
+      KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,EXTERNAL:PLAINTEXT,PLAINTEXT:PLAINTEXT
+      KAFKA_CFG_CONTROLLER_LISTENER_NAMES: CONTROLLER
+
+    restart: unless-stopped
+
+
+  # Billing service
+
+  billing-service:
+    image: billing-service:latest
+    build: ./billing-service
+    networks:
+      - internal
+    container_name: billing-service
+
+    ports:
+      - "4001:4001"
+      - "9001:9001"
+
+    restart: unless-stopped
+
+  # Analytics service
+
+  analytics-service:
+    image: analytics-service:latest
+    build: ./analytics-service
+    container_name: analytics-service
+    networks:
+      - internal
+
+    ports:
+      - "4002:4002"
+
+    environment:
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+
+    depends_on:
+      - kafka
+
+    restart: unless-stopped
+
+  # Patient service
+
+  patient-service:
+    image: patient-service:latest
+    build: ./patient-service
+    networks:
+      - internal
+
+    container_name: patient-service
+
+    ports:
+      - "4000:4000"
+
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://patient-service-db:5432/patientdb
+      SPRING_DATASOURCE_USERNAME: user
+      SPRING_DATASOURCE_PASSWORD: password
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+      SPRING_SQL_INIT_MODE: always
+      BILLING_SERVICE_ADDRESS:  billing-service
+      BILLING_SERVICE_GRPC_PORT: 9001
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+
+    depends_on:
+      - patient-service-db
+      - billing-service
+      - kafka
+
+    restart: unless-stopped
+
+  # Auth service
+
+  auth-service:
+    image: auth-service:latest
+    build: ./auth-service
+
+    networks:
+      - internal
+
+    container_name: auth-service
+    ports:
+      - "4005:4005"
+    environment:
+      JWT_SECRET: 5ZveJML9b0iaZQ2NT/sDUdUCcWaRhZ74ck1Rc6kHLh4=
+      SPRING_DATASOURCE_URL: jdbc:postgresql://auth-service-db:5432/authdb
+      SPRING_DATASOURCE_USERNAME: user
+      SPRING_DATASOURCE_PASSWORD: password
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+      SPRING_SQL_INIT_MODE: always
+
+    depends_on:
+      - auth-service-db
+    restart: unless-stopped
+
+
+  # APi gateway
+
+  api-gateway:
+    image: api-gateway:latest
+    build: ./api-gateway
+    networks:
+      - internal
+
+    container_name: api-gateway
+
+    ports:
+      - "4004:4004"
+
+    environment:
+      AUTH_SERVICE_URL: http://auth-service:4005
+      PATIENT_SERVICE_URL: http://patient-service:4000
+
+    depends_on:
+      - auth-service
+      - patient-service
+
+    restart: unless-stopped
+
+volumes:
+  patient-db-data:
+  auth-db-data:
+
+networks:
+  internal:
+    driver: bridge
+
+
+#    First time
+#    docker compose up --build -d
+#    No code changes
+#    docker compose up -d
+#    After changing Java code or configuration
+#    docker compose up --build -d
+#    Stop everything
+#    docker compose down
+
+# commands
+
+# 1) Build a Single Image (Without Compose)
+#Go inside the service directory. cd patient-service
+#Build the image: docker build -t patient-service:latest .
+
+# 2) Remove an image : docker rmi image_name/id
+
+# 3) Docker compose
+#  Go to project root cd ~/Desktop/Finals
+# Build and start everything  docker compose up --build -d
+# Start existing containers docker compose up -d
+# Stop everything docker compose down
+# Restart everything docker compose restart.
+# Restart one service  docker compose restart patient-service
+
+# 4) log: docker compose logs
